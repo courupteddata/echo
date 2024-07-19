@@ -52,6 +52,7 @@ jobs:
           action: deploy
           strategy: basic
           manifests: |
+            manifests/namespace.yaml
             manifests/echo-app.yaml
             manifests/ingress.yaml
 
