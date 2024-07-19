@@ -1,0 +1,64 @@
+name: build-and-deploy
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: "echo-app"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to Docker Hub
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      # Update manifest with correct version
+      - run: |
+          sed -i 's#image_name_replace#${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME}}@${{ steps.push.outputs.digest }}#g' manifests/echo-app.yaml
+
+      - name: Kubernetes set context
+        uses: Azure/k8s-set-context@v1
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+
+      - uses: Azure/k8s-deploy@v5
+        with:
+          namespace: "simple"
+          resource-group: cluster1
+          name: cluster1
+          action: deploy
+          strategy: basic
+          manifests: |
+            manifests/echo-app.yaml
+            manifests/ingress.yaml
+
