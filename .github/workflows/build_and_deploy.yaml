@@ -46,7 +46,6 @@ jobs:
 
       - uses: Azure/k8s-deploy@v5
         with:
-          namespace: "simple"
           resource-group: cluster1
           name: cluster1
           action: deploy
