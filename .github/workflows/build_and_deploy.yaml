@@ -35,7 +35,7 @@ jobs:
 
       # Update manifest with correct version
       - run: |
-          sed -i 's#image_name_replace#${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME}}@${{ steps.push.outputs.digest }}#g' manifests/echo-app.yaml
+          sed -i 's#image_name_replace#${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME}}@${{ steps.push.outputs.digest }}#g' manifests/echo-app.yaml
 
       - name: Kubernetes set context
         uses: Azure/k8s-set-context@v1
