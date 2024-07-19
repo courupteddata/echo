@@ -33,13 +33,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-
       # Update manifest with correct version
       - run: |
           sed -i 's#image_name_replace#${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME}}@${{ steps.push.outputs.digest }}#g' manifests/echo-app.yaml
